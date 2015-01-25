@@ -16,7 +16,7 @@ class ExampleClass(ProcessMixin):
     Instances of this class can run in another process, but you define it normally.
     """
     def __init__(self, some_arg, keyword_arg=None, **kwargs):
-        # Any synchronized objects form multiprocessing need to be passed in init.
+        # Any synchronized multiprocessing primitives need to be passed in init.
         self.some_arg = some_arg
         self.keyword_arg = keyword_arg
     
