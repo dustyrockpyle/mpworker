@@ -140,3 +140,22 @@ class TestSharedMemory(unittest.TestCase):
         self.assertEqual(0, self.shared.value)
         run(self.proxy.set_value(5))
         self.assertEqual(5, self.shared.value)
+
+
+class ExampleFailInit(ProcessMixin):
+    def __init__(self):
+        raise AssertionError()
+
+    def test(self):
+        return True
+
+
+class TestFailInit(unittest.TestCase):
+    def test_init(self):
+        with ExampleFailInit.spawn() as proxy:
+            self.assertRaises(AssertionError, run, proxy)
+
+    def test_call(self):
+        with ExampleFailInit.spawn() as proxy:
+            self.assertRaises(UnboundLocalError, run, proxy.test())
+            self.assertRaises(AssertionError, run, proxy)

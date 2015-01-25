@@ -20,17 +20,16 @@ class Worker(Process):
 
     def run(self):
         try:
-            proxy = self.proxy_type(*self.proxy_args, **self.proxy_kwargs)
+            proxied_obj = self.proxy_type(*self.proxy_args, **self.proxy_kwargs)
+            self.message_pipe.send(True)
         except Exception as e:
             self.message_pipe.send(e)
-            return self.close()
-        self.message_pipe.send(True)
         while not self.close_event.is_set():
             if not self.message_pipe.poll(timeout=1):
                 continue
             func_name, args, kwargs = self.message_pipe.recv()
             try:
-                result = getattr(proxy, func_name)(*args, **kwargs)
+                result = getattr(proxied_obj, func_name)(*args, **kwargs)
                 self.message_pipe.send(result)
             except Exception as e:
                 self.message_pipe.send(e)

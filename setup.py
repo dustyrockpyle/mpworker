@@ -15,7 +15,7 @@ setup(
     packages=['mpworker'],
     classifiers=[
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3.3'
+        'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Intended Audience :: Developers',
         'Development Status :: 3 - Alpha',
