@@ -1,5 +1,4 @@
 # mpworker
-###### Easy to use asyncio compatible package for stateful multiprocessing.
 
 ### Basic usage:
 
