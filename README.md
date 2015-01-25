@@ -42,7 +42,6 @@ if __name__ == '__main__':
         sleep(1)
         assert proxy.done()
         
-        asyncio.get_event_loop().run_until_complete(proxy)
         # Methods called off the proxied object return a future that will hold the result
         future_pid = proxy.getpid()
         proxy_pid = asyncio.get_event_loop().run_until_complete(future_pid)
