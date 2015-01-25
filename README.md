@@ -55,6 +55,7 @@ if __name__ == '__main__':
         assert params == future_params.result()
         
     # When used in a with statement, the process will close on exiting the context
-    # You can always close the process explicity; with wait=True it will wait until the process closes
+    # You can always close the process explicity; 
+    # with wait=True it will wait until the process closes
     proxy.close(wait=True)
 ```
