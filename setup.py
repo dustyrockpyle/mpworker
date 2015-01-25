@@ -8,5 +8,6 @@ setup(
     license='MIT',
     author='Dustin Pyle',
     author_email='dustyrockpyle@gmail.com',
-    description='Easy to use stateful multiprocessing. Asyncio compatible.'
+    description='Easy to use stateful multiprocessing. Asyncio compatible.',
+    download_url='https://github.com/dustyrockpyle/mpworker/tarball/0.1'
 )
