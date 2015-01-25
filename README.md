@@ -10,7 +10,8 @@ from os import getpid
 import asyncio
 
 
-# ProcessMixin exposes a classmethod spawn which creates an instance of the class in another process.
+# ProcessMixin exposes a classmethod, spawn 
+# spawn creates an instance of the class in another process.
 class ExampleClass(ProcessMixin):
     """
     Instances of this class can run in another process, but you define it normally.
