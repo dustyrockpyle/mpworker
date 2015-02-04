@@ -127,10 +127,12 @@ class ProcessInterface(ManagedFuture):
     Interface to proxy_type(*args, **kwargs) running in another process.
     Only an interface to the object's methods, can't set or get member variables.
     """
-    _fields = ['proxy_type', 'method_names', '_manager', '_loop', '_callbacks', '_result', '_state', '_log_traceback']
+    _fields = {'proxy_type', 'method_names', '_manager', '_loop', '_callbacks', '_result', '_state', '_log_traceback',
+               '_exception'}
+
     def __init__(self, proxy_type, *args, event_loop=None, **kwargs):
-        self.proxy_type = proxy_type
         self.method_names = set(self.iter_method_names(proxy_type))
+        self.proxy_type = proxy_type
         super().__init__(Manager(proxy_type, args, kwargs, self, event_loop=event_loop))
 
     @classmethod
@@ -143,6 +145,12 @@ class ProcessInterface(ManagedFuture):
         if name in self.method_names:
             return partial(self._manager.run_async, name)
         return self._manager.run_async('__getattr__', name)
+
+    def __setattr__(self, name, value):
+        if name in self._fields:
+            super().__setattr__(name, value)
+            return
+        return self._manager.run_async('__setattr__', name, value)
 
     def set_result(self, result):
         super().set_result(self)
