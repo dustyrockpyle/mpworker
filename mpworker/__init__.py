@@ -1,4 +1,5 @@
 from functools import partial
+import inspect
 from multiprocessing import Process, Event, Pipe
 from collections import deque
 import asyncio
@@ -126,12 +127,22 @@ class ProcessInterface(ManagedFuture):
     Interface to proxy_type(*args, **kwargs) running in another process.
     Only an interface to the object's methods, can't set or get member variables.
     """
+    _fields = ['proxy_type', 'method_names', '_manager', '_loop', '_callbacks', '_result', '_state', '_log_traceback']
     def __init__(self, proxy_type, *args, event_loop=None, **kwargs):
         self.proxy_type = proxy_type
+        self.method_names = list(self.iter_method_names(proxy_type))
         super().__init__(Manager(proxy_type, args, kwargs, self, event_loop=event_loop))
 
+    @classmethod
+    def iter_method_names(cls, proxy_type):
+        for key, value in proxy_type.__dict__.items():
+            if inspect.isfunction(value):
+                yield key
+
     def __getattr__(self, name):
-        return partial(self._manager.run_async, name)
+        if name in self.method_names:
+            return partial(self._manager.run_async, name)
+        return self._manager.run_async('__getattr__', name)
 
     def set_result(self, result):
         super().set_result(self)
