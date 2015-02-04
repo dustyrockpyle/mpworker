@@ -5,7 +5,7 @@ setup(
     version='0.2',
     description='Easy to use stateful multiprocessing. Asyncio compatible.',
     url='https://github.com/dustyrockpyle/mpworker',
-    download_url='https://github.com/dustyrockpyle/mpworker/tarball/v0.1',
+    download_url='https://github.com/dustyrockpyle/mpworker/tarball/v0.2',
     license='MIT',
     author='Dustin Pyle',
     author_email='dustyrockpyle@gmail.com',
