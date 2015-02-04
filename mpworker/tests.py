@@ -176,6 +176,7 @@ class ExampleMethodNames(ProcessMixin):
     def test3(self):
         return 3
 
+
 class TestMethodNames(unittest.TestCase):
     def setUp(self):
         self.proxy = ExampleMethodNames.spawn()
