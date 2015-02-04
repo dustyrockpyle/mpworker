@@ -30,7 +30,12 @@ class Worker(Process):
                 continue
             func_name, args, kwargs = self.message_pipe.recv()
             try:
-                result = getattr(proxied_obj, func_name)(*args, **kwargs)
+                if func_name == '__getattr__':
+                    result = getattr(proxied_obj, args[0])
+                elif func_name == '__setattr__':
+                    result = setattr(proxied_obj, args[0], args[1])
+                else:
+                    result = getattr(proxied_obj, func_name)(*args, **kwargs)
                 self.message_pipe.send(result)
             except Exception as e:
                 self.message_pipe.send(e)

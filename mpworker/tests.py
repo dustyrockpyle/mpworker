@@ -163,6 +163,7 @@ class TestFailInit(unittest.TestCase):
 
 class ExampleMethodNames(ProcessMixin):
     def __init__(self):
+        self.value = 'value'
         super().__init__()
 
     def test1(self):
@@ -184,3 +185,10 @@ class TestMethodNames(unittest.TestCase):
 
     def test_method_names(self):
         self.assertSetEqual(self.proxy.method_names, {'__init__', 'test1', 'test2'})
+
+    def test_getter(self):
+        self.assertEqual(run(self.proxy.value), 'value')
+
+    def test_setter(self):
+        self.proxy.value2 = 'value2'
+        self.assertEqual(run(self.proxy.value2), 'value2')
