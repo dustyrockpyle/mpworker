@@ -159,3 +159,28 @@ class TestFailInit(unittest.TestCase):
         with ExampleFailInit.spawn() as proxy:
             self.assertRaises(UnboundLocalError, run, proxy.test())
             self.assertRaises(AssertionError, run, proxy)
+
+
+class ExampleMethodNames(ProcessMixin):
+    def __init__(self):
+        super().__init__()
+
+    def test1(self):
+        pass
+
+    def test2(self):
+        pass
+
+    @property
+    def test3(self):
+        return 3
+
+class TestMethodNames(unittest.TestCase):
+    def setUp(self):
+        self.proxy = ExampleMethodNames.spawn()
+
+    def tearDown(self):
+        self.proxy.close()
+
+    def test_method_names(self):
+        self.assertSetEqual(self.proxy.method_names, {'__init__', 'test1', 'test2'})

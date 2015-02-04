@@ -130,7 +130,7 @@ class ProcessInterface(ManagedFuture):
     _fields = ['proxy_type', 'method_names', '_manager', '_loop', '_callbacks', '_result', '_state', '_log_traceback']
     def __init__(self, proxy_type, *args, event_loop=None, **kwargs):
         self.proxy_type = proxy_type
-        self.method_names = list(self.iter_method_names(proxy_type))
+        self.method_names = set(self.iter_method_names(proxy_type))
         super().__init__(Manager(proxy_type, args, kwargs, self, event_loop=event_loop))
 
     @classmethod
