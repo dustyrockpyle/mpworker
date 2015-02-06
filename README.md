@@ -53,6 +53,13 @@ if __name__ == '__main__':
         sleep(1)
         assert params == future_params.result()
         
+        # You can also get and set attributes; getting an attribute returns a future
+        future_arg = proxy.some_arg
+        assert 'some_arg' == asyncio.get_event_loop().run_until_complete(future_arg)
+        
+        proxy.some_other_arg = 'other_arg'
+        assert 'other_arg' == asyncio.get_event_loop().run_until_complete(proxy.some_other_arg)
+        
     # When used in a with statement, the process will close on exiting the context
     # You can always close the process explicity; 
     # with wait=True it will wait until the process closes
