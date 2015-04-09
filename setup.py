@@ -2,10 +2,10 @@ from distutils.core import setup
 
 setup(
     name='mpworker',
-    version='0.2.1',
+    version='0.3',
     description='Easy to use stateful multiprocessing. Asyncio compatible.',
     url='https://github.com/dustyrockpyle/mpworker',
-    download_url='https://github.com/dustyrockpyle/mpworker/tarball/v0.2.1',
+    download_url='https://github.com/dustyrockpyle/mpworker/tarball/v0.3',
     license='MIT',
     author='Dustin Pyle',
     author_email='dustyrockpyle@gmail.com',
