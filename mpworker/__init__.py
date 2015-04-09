@@ -3,6 +3,7 @@ import inspect
 from multiprocessing import Process, Event, Pipe
 from collections import deque
 import asyncio
+from threading import Thread
 
 
 class Worker(Process):
@@ -28,6 +29,9 @@ class Worker(Process):
         while not self.close_event.is_set():
             if not self.message_pipe.poll(timeout=1):
                 continue
+            # Need to check if close_event is set to prevent broken message pipe errors
+            if self.close_event.is_set():
+                return self.close()
             func_name, args, kwargs = self.message_pipe.recv()
             try:
                 if func_name == '__getattr__':
@@ -45,36 +49,55 @@ class Worker(Process):
         self.is_closed_event.set()
 
 
+class ManagerThread(Thread):
+    """
+    Polls the message_pipe waiting for messages from the worker and sets the result of futures when received.
+    """
+    def __init__(self, message_pipe, future_deque, close_event, event_loop):
+        super().__init__()
+        self.message_pipe = message_pipe
+        self.future_deque = future_deque
+        self.close_event = close_event
+        self.event_loop = event_loop
+
+    def run(self):
+        while not self.close_event.is_set():
+            if not self.message_pipe.poll(timeout=1):
+                continue
+            result = self.message_pipe.recv()
+            future = self.future_deque.popleft()
+            if isinstance(result, Exception):
+                if self.event_loop.is_running():
+                    self.event_loop.call_soon_threadsafe(future.set_exception, result)
+                else:
+                    future.set_exception(result)
+            else:
+                if self.event_loop.is_running():
+                    self.event_loop.call_soon_threadsafe(future.set_result, result)
+                else:
+                    future.set_result(result)
+
+
 class Manager:
     """
     Creates a Worker and sends tasks to it. Returns and sets futures for the task results.
-    When called in the asyncio event_loop, polls Worker results on a delay of sleep_time (default is 1 ms).
+    When called in the asyncio event_loop, polls Worker results with ManagerThread.
     """
-    sleep_time = .001
 
     def __init__(self, proxy_type, args, kwargs, instance_future, event_loop=None):
         self.message_pipe, worker_pipe = Pipe()
         self.future_deque = deque()
         self.future_deque.append(instance_future)
         self.close_event = Event()
-        self.is_closed_event = Event()
-        self.worker = Worker(worker_pipe, self.close_event, self.is_closed_event, proxy_type, args, kwargs)
-        self.worker.start()
+        self.worker_closed_event = Event()
         self.event_loop = event_loop if event_loop is not None else asyncio.get_event_loop()
-        self.event_loop.call_soon(self.process_message_pipe)
-
-    def process_message_pipe(self):
-        while self.message_pipe.poll():
-            result = self.message_pipe.recv()
-            future = self.future_deque.popleft()
-            if isinstance(result, Exception):
-                future.set_exception(result)
-            else:
-                future.set_result(result)
-        self.event_loop.call_later(self.sleep_time, self.process_message_pipe)
+        self.thread = ManagerThread(self.message_pipe, self.future_deque, self.close_event, self.event_loop)
+        self.worker = Worker(worker_pipe, self.close_event, self.worker_closed_event, proxy_type, args, kwargs)
+        self.worker.start()
+        self.thread.start()
 
     def run_async(self, name, *args, **kwargs):
-        future = ManagedFuture(self)
+        future = ProcessFuture()
         try:
             self.message_pipe.send([name, args, kwargs])
             self.future_deque.append(future)
@@ -85,7 +108,7 @@ class Manager:
     def close(self, wait=False):
         self.close_event.set()
         if wait:
-            self.is_closed_event.wait()
+            self.worker_closed_event.wait()
 
     def __del__(self):
         self.close()
@@ -96,38 +119,18 @@ class Manager:
 
     @property
     def is_closed(self):
-        return self.is_closed_event.is_set()
+        return self.worker_closed_event.is_set()
 
 
-class ManagedFuture(asyncio.Future):
+class ProcessFuture(asyncio.Future):
     """
-    Future whose result will be set by the given manager.
+    Future whose result is computed from another process and can't be cancelled.
     """
-    def __init__(self, manager):
-        self._manager = manager
-        super().__init__()
-
-    def _run_manager(self):
-        if not super().done():
-            self._manager.process_message_pipe()
-
-    def done(self):
-        self._run_manager()
-        return super().done()
-
-    def result(self):
-        self._run_manager()
-        return super().result()
-
-    def exception(self):
-        self._run_manager()
-        return super().exception()
-
     def cancel(self):
-        raise RuntimeError("ManagedFuture instances cannot be cancelled.")
+        raise RuntimeError("ProcessFuture instances cannot be cancelled.")
 
 
-class ProcessInterface(ManagedFuture):
+class ProcessInterface(ProcessFuture):
     """
     Interface to proxy_type(*args, **kwargs) running in another process.
     Only an interface to the object's methods, can't set or get member variables.
@@ -136,9 +139,10 @@ class ProcessInterface(ManagedFuture):
                '_exception'}
 
     def __init__(self, proxy_type, *args, event_loop=None, **kwargs):
+        super().__init__()
         self.method_names = set(self.iter_method_names(proxy_type))
         self.proxy_type = proxy_type
-        super().__init__(Manager(proxy_type, args, kwargs, self, event_loop=event_loop))
+        self._manager = Manager(proxy_type, args, kwargs, self, event_loop=event_loop)
 
     @classmethod
     def iter_method_names(cls, proxy_type):
