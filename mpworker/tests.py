@@ -185,7 +185,7 @@ class TestMethodNames(unittest.TestCase):
         self.proxy.close()
 
     def test_method_names(self):
-        self.assertSetEqual(self.proxy.method_names, {'__init__', 'test1', 'test2'})
+        self.assertSetEqual(self.proxy.method_names, {'__init__', 'test1', 'test2', 'spawn'})
 
     def test_getter(self):
         self.assertEqual(run(self.proxy.value), 'value')

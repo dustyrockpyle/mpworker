@@ -142,9 +142,9 @@ class ProcessInterface(ManagedFuture):
 
     @classmethod
     def iter_method_names(cls, proxy_type):
-        for key, value in proxy_type.__dict__.items():
-            if inspect.isfunction(value):
-                yield key
+        func_or_method = lambda x: inspect.isfunction(x) or inspect.ismethod(x)
+        for name, member in inspect.getmembers(proxy_type, predicate=func_or_method):
+            yield name
 
     def __getattr__(self, name):
         if name in self.method_names:
